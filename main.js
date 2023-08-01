@@ -1,4 +1,7 @@
 const fs = require("fs");
+const express = require ("express");
+const app = express();
+const PORT = 8080
 
 class Contenedor {
     constructor(file) {
@@ -29,16 +32,7 @@ class Contenedor {
             throw new Error("Error al obtener ID")
         }
     }
-
-    async getAll(){
-        try{
-            const objects = await this.getAllObjects()
-            return objects
-        }catch(error){
-            throw new Error ("Error al obtener los objetos")
-        }
-    }
-
+    
     async deleteById(id){
         try{
             let objects =await this.getAllObjects()
@@ -55,7 +49,6 @@ class Contenedor {
             throw new Error("Error al eliminar los objetos")
         }
     }
-
     async getAllObjects(){
         try{
             const data = await fs.promises.readFile(this.file, "utf-8")
@@ -63,6 +56,23 @@ class Contenedor {
         }catch(error){
            return []
         }
+    }
+
+    
+   async getRandom(){   
+        try {
+            if (!fs.existsSync(this.file)) {
+            return "No hay productos";
+            } else {
+            let data = await fs.promises.readFile(this.file, "utf-8");
+            let products = JSON.parse(data);
+            const randomProduct =
+                products[Math.floor(Math.random() * products.length)];
+            return randomProduct;
+            }
+        }catch(error){
+            throw new Error("Error al obtener los productos")
+    };
     }
 
     async saveObjects(objects){
@@ -77,32 +87,51 @@ class Contenedor {
 const main = async () => {
     const productos = new Contenedor ("productos.txt")
 
-    //guardar un objeto
+    //obtener todos los objetos   
+
+        const allObjects = await productos.getAllObjects()
+        console.log("Objetos guardados", allObjects)
+        app.get ('/productos', async(req, res)=> {
+            res.json(allObjects)
+        })
+
+//     //Obtener producto random
+//     app.get("/randomproducto", async (req, res) => {
+//         try {
+//           const randomProduct = await productos.getRandom();
+//           res.json(randomProduct);
+//         } catch {
+//           console.error(err);
+//         }
+//       });
+
+    //Guardar un objeto
 
     // const id = await productos.save(
-    //     {title:"Producto 3", Price: 300}
+    //     {title:"Producto", Price: 4200}
     // )
     // console.log("Objeto guardado con ID:", id)
 
-    //obtener todos los objetos
-
-    // const allObjects = await productos.getAll()
-    // console.log("Objetos guardados", allObjects)
-
-    //obtener objeto por id
+    //Obtener objeto por id
 
     // const obj = await productos.getById(2)
     // console.log("Objeto obtenido", obj)
 
-    //eliminar un objeto
+    //Eliminar un objeto
 
     // await productos.deleteById(1)
     // console.log("Objeto eliminado")
 
-    //eliminar todos los objetos
+    //Eliminar todos los objetos
 
     // await productos.deleteAll()
     // console.log("Objetos eliminados")
 }
 
 main().catch((error) => console.error(error))
+
+const server = app.listen(PORT, () => {
+    console.log(`Escuchando en el puerto ${PORT}`)
+})
+
+server.on("error", error => console.log(`Error en el servidor ${error}`))
